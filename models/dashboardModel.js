@@ -54,7 +54,7 @@ const startOfWeek = (date) => {
 // =====================================================
 const sumEarnings = async (start, end) => {
   const [[row]] = await db.query(
-    `SELECT COALESCE(SUM(${earnedExpr}),0) total FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(o.created_at) BETWEEN ? AND ? AND ${COMPLETED}`,
+    `SELECT COALESCE(SUM(${earnedExpr}),0) total FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(COALESCE(o.completed_at, o.created_at)) BETWEEN ? AND ? AND ${COMPLETED}`,
     [start, end]
   );
   return Number(row.total || 0);
@@ -88,7 +88,7 @@ const getSummary = async () => {
     `SELECT COUNT(*) totalOrders, SUM(CASE WHEN status IN ('Completed','Delivered') THEN 1 ELSE 0 END) completedOrders FROM orders`
   );
   const [[goldTotals]] = await db.query(
-    `SELECT COALESCE(SUM(${weightExpr}),0) totalGoldDesigned, COALESCE(SUM(${earnedExpr}),0) totalEarnings, COUNT(DISTINCT DATE(o.created_at)) workingDays FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE ${COMPLETED}`
+    `SELECT COALESCE(SUM(${weightExpr}),0) totalGoldDesigned, COALESCE(SUM(${earnedExpr}),0) totalEarnings, COUNT(DISTINCT DATE(COALESCE(o.completed_at, o.created_at))) workingDays FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE ${COMPLETED}`
   );
   const [[castingRow]] = await db.query(
     `SELECT COALESCE(SUM(GREATEST(COALESCE(gold_given,0)-COALESCE(gold_returned,0),0)),0) castingLoss FROM expenses WHERE category='Casting'`
@@ -114,11 +114,11 @@ const getSummary = async () => {
   const netProfitGrams = Number((totalEarnings - castingLoss).toFixed(3));
 
   const [monthClient] = await db.query(
-    `SELECT c.client_name name, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(o.created_at) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY c.id ORDER BY earnings DESC LIMIT 1`,
+    `SELECT c.client_name name, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(COALESCE(o.completed_at, o.created_at)) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY c.id ORDER BY earnings DESC LIMIT 1`,
     [monthStart, todayStr]
   );
   const [yearClient] = await db.query(
-    `SELECT c.client_name name, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(o.created_at) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY c.id ORDER BY earnings DESC LIMIT 1`,
+    `SELECT c.client_name name, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(COALESCE(o.completed_at, o.created_at)) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY c.id ORDER BY earnings DESC LIMIT 1`,
     [yearStart, todayStr]
   );
 
@@ -152,8 +152,14 @@ const getDaily = async () => {
   const today = parseYMD(await dbToday());
   const start = new Date(today);
   start.setDate(start.getDate() - 13);
+  // Uses DATE_FORMAT (returns a plain string) rather than DATE(...) —
+  // mysql2 returns DATE-typed columns as native JS Date objects by
+  // default, and re-stringifying one of those with String(...).slice(0,10)
+  // produces something like "Wed Aug 1" instead of "2026-08-12", which
+  // never matches the "YYYY-MM-DD" keys below — so every day silently
+  // fell back to 0 regardless of actual earnings.
   const [rows] = await db.query(
-    `SELECT DATE(o.created_at) date, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(o.created_at) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY DATE(o.created_at)`,
+    `SELECT DATE_FORMAT(COALESCE(o.completed_at, o.created_at), '%Y-%m-%d') date, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(COALESCE(o.completed_at, o.created_at)) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY date`,
     [fmt(start), fmt(today)]
   );
   const map = new Map(rows.map((r) => [String(r.date).slice(0, 10), Number(r.earnings || 0)]));
@@ -194,7 +200,7 @@ const getMonthly = async () => {
   const today = parseYMD(await dbToday());
   const start = new Date(today.getFullYear(), today.getMonth() - 11, 1);
   const [rows] = await db.query(
-    `SELECT DATE_FORMAT(o.created_at,'%Y-%m') monthKey, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(o.created_at) >= ? AND ${COMPLETED} GROUP BY monthKey`,
+    `SELECT DATE_FORMAT(COALESCE(o.completed_at, o.created_at),'%Y-%m') monthKey, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(COALESCE(o.completed_at, o.created_at)) >= ? AND ${COMPLETED} GROUP BY monthKey`,
     [fmt(start)]
   );
   const map = new Map(rows.map((r) => [r.monthKey, Number(r.earnings || 0)]));
@@ -235,7 +241,7 @@ const getTopClientsMonth = async () => {
   const today = parseYMD(await dbToday());
   const monthStart = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
   const [rows] = await db.query(
-    `SELECT c.id, c.client_name name, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(o.created_at) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY c.id ORDER BY earnings DESC LIMIT 10`,
+    `SELECT c.id, c.client_name name, COALESCE(SUM(${earnedExpr}),0) earnings FROM orders o LEFT JOIN clients c ON c.id=o.client_id WHERE DATE(COALESCE(o.completed_at, o.created_at)) BETWEEN ? AND ? AND ${COMPLETED} GROUP BY c.id ORDER BY earnings DESC LIMIT 10`,
     [monthStart, fmt(today)]
   );
   return rows.map((r) => ({ name: r.name, earnings: Number(r.earnings || 0) }));
