@@ -27,6 +27,7 @@ async function ensureOrderColumns(){
   }
   // One-time backfill for orders that were already Completed/Delivered
   // before this column existed — best-effort using whatever timestamp is
+<<<<<<< HEAD
   // already on the row. Wrapped defensively: this must never be able to
   // take down /orders or /clients (both call ensureOrderColumns) just
   // because a column this assumes about (e.g. updated_at) turns out not
@@ -38,6 +39,10 @@ async function ensureOrderColumns(){
   } catch (err) {
     console.error("completed_at backfill skipped:", err.message);
   }
+=======
+  // already on the row (safe to re-run; only touches rows still NULL).
+  await db.query(`UPDATE orders SET completed_at = COALESCE(updated_at, created_at) WHERE status IN ('Completed','Delivered') AND completed_at IS NULL`);
+>>>>>>> 1c06ad9e6ba34d6ba618d778ea971ddc801b35cd
   schemaReady=true;
 }
 
