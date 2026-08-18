@@ -13,11 +13,30 @@ async function ensureOrderColumns(){
     ["stone_weight","DECIMAL(12,3) NULL"],
     ["net_gold_weight","DECIMAL(12,3) NULL"],
     ["delivery_date","DATE NULL"],
-    ["status","VARCHAR(50) NOT NULL DEFAULT 'Pending'"]
+    ["status","VARCHAR(50) NOT NULL DEFAULT 'Pending'"],
+    // When an order's status actually became Completed/Delivered — used
+    // to attribute earnings to the day work was finished, not the day
+    // the order was first created. Without this, completing an old
+    // pending order today never shows up in "today's" earnings, since
+    // everything was bucketed by created_at instead.
+    ["completed_at","TIMESTAMP NULL DEFAULT NULL"]
   ];
   for(const [name,definition] of columns){
     const [rows]=await db.query(`SHOW COLUMNS FROM orders LIKE ?`,[name]);
     if(!rows.length) await db.query(`ALTER TABLE orders ADD COLUMN ${name} ${definition}`);
+  }
+  // One-time backfill for orders that were already Completed/Delivered
+  // before this column existed — best-effort using whatever timestamp is
+  // already on the row. Wrapped defensively: this must never be able to
+  // take down /orders or /clients (both call ensureOrderColumns) just
+  // because a column this assumes about (e.g. updated_at) turns out not
+  // to exist on the live table.
+  try {
+    const [hasUpdatedAt] = await db.query(`SHOW COLUMNS FROM orders LIKE 'updated_at'`);
+    const fallbackExpr = hasUpdatedAt.length ? "COALESCE(updated_at, created_at)" : "created_at";
+    await db.query(`UPDATE orders SET completed_at = ${fallbackExpr} WHERE status IN ('Completed','Delivered') AND completed_at IS NULL`);
+  } catch (err) {
+    console.error("completed_at backfill skipped:", err.message);
   }
   schemaReady=true;
 }
@@ -48,21 +67,38 @@ const getOrderById = async (id) => {
   return rows[0] || null;
 };
 
+const isCompletedStatus = (status) => status === "Completed" || status === "Delivered";
+
 const createOrder = async (client_id, order_number, ornament_name, gross_weight, stone_weight, net_gold_weight, wastage_percent, labour_charge, gold_earned, delivery_date, status, notes = null, category = "Custom") => {
   await ensureOrderColumns();
+  const completedAt = isCompletedStatus(status) ? new Date() : null;
   const [result] = await db.query(`
     INSERT INTO orders
-      (client_id, order_number, ornament_name, gross_weight, stone_weight, net_gold_weight, wastage_percent, labour_charge, gold_earned, delivery_date, status, gold_deducted, notes, category)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
-  `, [client_id, order_number, ornament_name, Number(gross_weight||0), Number(stone_weight||0), Number(net_gold_weight||gross_weight||0), Number(wastage_percent||0), Number(labour_charge||0), Number(gold_earned||0), delivery_date||null, status||"Pending", notes||null, category||"Custom"]);
+      (client_id, order_number, ornament_name, gross_weight, stone_weight, net_gold_weight, wastage_percent, labour_charge, gold_earned, delivery_date, status, gold_deducted, notes, category, completed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+  `, [client_id, order_number, ornament_name, Number(gross_weight||0), Number(stone_weight||0), Number(net_gold_weight||gross_weight||0), Number(wastage_percent||0), Number(labour_charge||0), Number(gold_earned||0), delivery_date||null, status||"Pending", notes||null, category||"Custom", completedAt]);
   return result.insertId;
 };
 
-const updateOrder = async (id, client_id, order_number, ornament_name, gross_weight, stone_weight, net_gold_weight, wastage_percent, labour_charge, gold_earned, delivery_date, status, notes = null, category = "Custom") => {
+// previousStatus lets us tell whether this update is *newly* marking the
+// order Completed/Delivered (stamp completed_at = now), re-saving one
+// that was already completed (leave its completed_at alone), or moving
+// it back out of Completed (clear completed_at so a later re-completion
+// gets today's date, not a stale one).
+const updateOrder = async (id, client_id, order_number, ornament_name, gross_weight, stone_weight, net_gold_weight, wastage_percent, labour_charge, gold_earned, delivery_date, status, notes = null, category = "Custom", previousStatus = null) => {
   await ensureOrderColumns();
+  const wasCompleted = isCompletedStatus(previousStatus);
+  const nowCompleted = isCompletedStatus(status);
+  let completedAtClause = "";
+  const params = [client_id, order_number, ornament_name, Number(gross_weight||0), Number(stone_weight||0), Number(net_gold_weight||gross_weight||0), Number(wastage_percent||0), Number(labour_charge||0), Number(gold_earned||0), delivery_date||null, status, notes||null, category||"Custom"];
+  if (nowCompleted && !wasCompleted) {
+    completedAtClause = ", completed_at=NOW()";
+  } else if (!nowCompleted && wasCompleted) {
+    completedAtClause = ", completed_at=NULL";
+  }
   await db.query(`
-    UPDATE orders SET client_id=?, order_number=?, ornament_name=?, gross_weight=?, stone_weight=?, net_gold_weight=?, wastage_percent=?, labour_charge=?, gold_earned=?, delivery_date=?, status=?, notes=?, category=? WHERE id=?
-  `, [client_id, order_number, ornament_name, Number(gross_weight||0), Number(stone_weight||0), Number(net_gold_weight||gross_weight||0), Number(wastage_percent||0), Number(labour_charge||0), Number(gold_earned||0), delivery_date||null, status, notes||null, category||"Custom", id]);
+    UPDATE orders SET client_id=?, order_number=?, ornament_name=?, gross_weight=?, stone_weight=?, net_gold_weight=?, wastage_percent=?, labour_charge=?, gold_earned=?, delivery_date=?, status=?, notes=?, category=?${completedAtClause} WHERE id=?
+  `, [...params, id]);
 };
 
 const deleteOrder = async (id) => {
