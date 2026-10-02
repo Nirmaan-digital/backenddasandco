@@ -98,6 +98,7 @@ const getSummary = async () => {
   );
 
   const [settingsRows] = await db.query(`SELECT opening_gold_balance, rate_22k FROM business_settings LIMIT 1`);
+<<<<<<< HEAD
   // Computed live from the opening balance plus every gold_transactions
   // row, rather than trusting the last transaction's stored balance_after
   // — that stored value freezes at whatever the opening balance was when
@@ -108,6 +109,12 @@ const getSummary = async () => {
   );
   const openingGold = Number(settingsRows[0]?.opening_gold_balance || 0);
   const currentGold = openingGold + Number(ledgerTotals.added || 0) - Number(ledgerTotals.deducted || 0);
+=======
+  const [balanceRows] = await db.query(`SELECT balance_after FROM gold_transactions ORDER BY id DESC LIMIT 1`);
+  const currentGold = balanceRows.length
+    ? Number(balanceRows[0].balance_after || 0)
+    : Number(settingsRows[0]?.opening_gold_balance || 0);
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
   const rate22k = Number(settingsRows[0]?.rate_22k || 0);
 
   const totalOrders = Number(orderCounts.totalOrders || 0);

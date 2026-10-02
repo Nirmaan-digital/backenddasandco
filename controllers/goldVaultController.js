@@ -19,6 +19,12 @@ const getTransactions = async (
     const transactions =
       await getAllTransactions();
 
+<<<<<<< HEAD
+=======
+    const balance =
+      await getCurrentBalance();
+
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
     const [settings] =
       await db.query(
         `
@@ -65,6 +71,7 @@ const getTransactions = async (
         0
       );
 
+<<<<<<< HEAD
     // The running "balance after" stored on each transaction row
     // was frozen at the opening balance that existed when it was
     // created. If the opening balance is changed later in Settings,
@@ -86,6 +93,8 @@ const getTransactions = async (
     }));
     const balance = chronological.length ? running : opening;
 
+=======
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
     return res.status(200).json({
       success: true,
 
@@ -99,7 +108,11 @@ const getTransactions = async (
 
       totalDeducted,
 
+<<<<<<< HEAD
       transactions: transactionsWithBalances,
+=======
+      transactions,
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
     });
   } catch (error) {
     console.error(

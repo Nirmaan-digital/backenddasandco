@@ -102,6 +102,7 @@ router.post("/import", authMiddleware, async (req, res) => {
 });
 
 // =====================================================
+<<<<<<< HEAD
 // RESET — permanently deletes all orders, expenses and gold
 // ledger entries. Clients are KEPT (not deleted), but only
 // their name and default earning % survive — every other
@@ -111,6 +112,12 @@ router.post("/import", authMiddleware, async (req, res) => {
 // computed from the orders table rather than stored on the
 // client row. The logged-in account and saved business
 // settings/gold rates are also kept.
+=======
+// RESET — permanently deletes all business data (clients,
+// orders, expenses, gold ledger). The logged-in account and
+// saved business settings/gold rates are kept, so you aren't
+// locked out and don't have to re-enter your rates.
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
 // =====================================================
 router.post("/reset", authMiddleware, async (req, res) => {
   const conn = await db.getConnection();
@@ -120,10 +127,17 @@ router.post("/reset", authMiddleware, async (req, res) => {
     await conn.query("DELETE FROM gold_transactions");
     await conn.query("DELETE FROM expenses");
     await conn.query("DELETE FROM orders");
+<<<<<<< HEAD
     await conn.query("UPDATE clients SET phone=NULL, email=NULL, company=NULL, notes=NULL");
     await conn.query("SET FOREIGN_KEY_CHECKS=1");
     await conn.commit();
     res.json({ success: true, message: "All business data has been reset. Client names and default percentages were kept." });
+=======
+    await conn.query("DELETE FROM clients");
+    await conn.query("SET FOREIGN_KEY_CHECKS=1");
+    await conn.commit();
+    res.json({ success: true, message: "All business data has been reset" });
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
   } catch (e) {
     await conn.rollback();
     res.status(500).json({ success: false, message: e.message });
