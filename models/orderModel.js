@@ -73,6 +73,10 @@ const deleteOrder = async (id) => {
 };
 
 const getCurrentGoldBalance = async () => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> c4e8e137fe0c3193200dc50d8324092cbbd50d6d
   // Computed live from the opening balance plus every ledger row, not
   // from the last transaction's stored balance_after — that value
   // freezes at whatever the opening balance was when it was written
@@ -80,6 +84,15 @@ const getCurrentGoldBalance = async () => {
   const [[settings]] = await db.query("SELECT opening_gold_balance FROM business_settings LIMIT 1");
   const [[totals]] = await db.query("SELECT COALESCE(SUM(gold_added),0) added, COALESCE(SUM(gold_deducted),0) deducted FROM gold_transactions");
   return Number(settings?.opening_gold_balance||0) + Number(totals.added||0) - Number(totals.deducted||0);
+<<<<<<< HEAD
+=======
+=======
+  const [rows] = await db.query("SELECT balance_after FROM gold_transactions ORDER BY id DESC LIMIT 1");
+  if (rows.length) return Number(rows[0].balance_after||0);
+  const [settings] = await db.query("SELECT opening_gold_balance FROM business_settings LIMIT 1");
+  return Number(settings[0]?.opening_gold_balance||0);
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
+>>>>>>> c4e8e137fe0c3193200dc50d8324092cbbd50d6d
 };
 const hasOrderGoldTransaction = async (orderId) => { const [rows]=await db.query("SELECT id FROM gold_transactions WHERE order_id=? AND transaction_type='ORDER_EARNED' LIMIT 1",[orderId]); return rows.length>0; };
 const insertOrderGoldTransaction = async (orderId, orderNumber, goldEarned) => {
