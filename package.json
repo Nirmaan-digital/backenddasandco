@@ -19,7 +19,11 @@
   "author": "Ram Prasad",
   "license": "ISC",
   "dependencies": {
+<<<<<<< HEAD
     "bcryptjs": "^2.4.3",
+=======
+    "bcrypt": "^6.0.0",
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",

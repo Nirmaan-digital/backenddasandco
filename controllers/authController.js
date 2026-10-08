@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 const bcrypt = require("bcryptjs");
+=======
+const bcrypt = require("bcrypt");
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
 const {
   createUser,
   findUserByEmail,

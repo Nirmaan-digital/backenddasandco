@@ -1,5 +1,9 @@
 const {
   getAllTransactions,
+<<<<<<< HEAD
+=======
+  getCurrentBalance,
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
   createTransaction,
   deleteTransaction,
 } = require("../models/goldVaultModel");
@@ -18,6 +22,21 @@ const getTransactions = async (
     const transactions =
       await getAllTransactions();
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+    const balance =
+      await getCurrentBalance();
+
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
+>>>>>>> c4e8e137fe0c3193200dc50d8324092cbbd50d6d
+>>>>>>> 91f348a6e92d41be4d4a4c6fae327e08bf68258d
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
     const [settings] =
       await db.query(
         `
@@ -64,6 +83,16 @@ const getTransactions = async (
         0
       );
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> c4e8e137fe0c3193200dc50d8324092cbbd50d6d
+>>>>>>> 91f348a6e92d41be4d4a4c6fae327e08bf68258d
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
     // The running "balance after" stored on each transaction row
     // was frozen at the opening balance that existed when it was
     // created. If the opening balance is changed later in Settings,
@@ -85,6 +114,17 @@ const getTransactions = async (
     }));
     const balance = chronological.length ? running : opening;
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
+>>>>>>> c4e8e137fe0c3193200dc50d8324092cbbd50d6d
+>>>>>>> 91f348a6e92d41be4d4a4c6fae327e08bf68258d
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
     return res.status(200).json({
       success: true,
 
@@ -98,7 +138,23 @@ const getTransactions = async (
 
       totalDeducted,
 
+<<<<<<< HEAD
       transactions: transactionsWithBalances,
+=======
+<<<<<<< HEAD
+      transactions: transactionsWithBalances,
+=======
+<<<<<<< HEAD
+      transactions: transactionsWithBalances,
+=======
+<<<<<<< HEAD
+      transactions: transactionsWithBalances,
+=======
+      transactions,
+>>>>>>> 542a8888f8fc1a8b362d8b1e4f28d43200e75905
+>>>>>>> c4e8e137fe0c3193200dc50d8324092cbbd50d6d
+>>>>>>> 91f348a6e92d41be4d4a4c6fae327e08bf68258d
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
     });
   } catch (error) {
     console.error(

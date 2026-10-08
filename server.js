@@ -7,7 +7,11 @@ require("dotenv").config();
 // DATABASE
 // =====================================
 
+<<<<<<< HEAD
 const db = require("./config/db");
+=======
+require("./config/db");
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
 
 // =====================================
 // ROUTES
@@ -45,12 +49,15 @@ const allowedOrigins = [
   "http://www.dasandco.online",
 ];
 
+<<<<<<< HEAD
 const allowedOriginPatterns = [
   /^https:\/\/([a-z0-9-]+\.)*dasandco\.online$/i,
   /^https:\/\/([a-z0-9-]+\.)*hostingersite\.com$/i,
   /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/i,
 ];
 
+=======
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
 // =====================================
 // CORS MIDDLEWARE
 // =====================================
@@ -68,10 +75,13 @@ app.use(
         return callback(null, true);
       }
 
+<<<<<<< HEAD
       if (allowedOriginPatterns.some((pattern) => pattern.test(origin))) {
         return callback(null, true);
       }
 
+=======
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
       // Allow local network development
       const localNetworkRegex =
         /^http:\/\/192\.168\.\d+\.\d+:\d+$/;
@@ -151,6 +161,7 @@ app.get("/", (req, res) => {
 // HEALTH CHECK
 // =====================================
 
+<<<<<<< HEAD
 app.get("/api/health", async (req, res) => {
   const payload = {
     success: true,
@@ -173,6 +184,14 @@ app.get("/api/health", async (req, res) => {
       detail: error.message,
     });
   }
+=======
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "API is running",
+    timestamp: new Date(),
+  });
+>>>>>>> 2ac321230986c4c0eddfbc755c4cf8bab0359016
 });
 
 // =====================================
