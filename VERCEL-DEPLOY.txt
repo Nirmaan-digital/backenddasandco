@@ -1,0 +1,35 @@
+DAS & CO BACKEND — VERCEL
+
+Upload this folder (or connect the repo) as a Vercel project.
+Root directory: this folder. Framework preset: Other.
+Do not set an Output Directory. Vercel runs the Node serverless function in /api.
+
+Environment variables (Vercel → Project → Settings → Environment Variables):
+
+DB_HOST        Hostinger remote MySQL hostname. Do not use localhost.
+DB_PORT        3306
+DB_NAME        database name from hPanel
+DB_USER        database user from hPanel
+DB_PASSWORD    database password from hPanel
+DB_SSL         true
+JWT_SECRET     long random string (same value the app already uses)
+JWT_EXPIRES_IN 7d
+
+Optional demo database (leave blank to disable demo routing):
+DEMO_DB_HOST, DEMO_DB_PORT, DEMO_DB_NAME, DEMO_DB_USER, DEMO_DB_PASSWORD, DEMO_DB_SSL
+
+Hostinger must allow this API to reach MySQL:
+1. hPanel → Databases → Remote MySQL.
+2. Add the access host % so Vercel can connect.
+3. Use the remote hostname Hostinger shows there as DB_HOST.
+   localhost only works when the API itself is running on Hostinger.
+
+After deploy, open:
+https://backenddasandco.vercel.app/api/health
+It should return {"success":true,"message":"API is running",...}
+
+Then open:
+https://backenddasandco.vercel.app/api/health?db=1
+It should return "database":"connected". If it does not, the message is the MySQL error to fix in the env vars above.
+
+The website on Hostinger calls https://backenddasandco.vercel.app/api
